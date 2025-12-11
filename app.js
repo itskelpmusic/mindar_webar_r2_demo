@@ -11,7 +11,7 @@ const setStatus = (msg) => {
 setStatus("initializing");
 
 const start = async () => {
-  // MindAR setup – uses your 90s.mind file
+  // MindAR setup – uses your 90sPop.mind file
   const mindarThree = new MindARThree({
     container: document.querySelector("#container"),
     imageTargetSrc: "./assets/90sPop.mind", // make sure this file exists
