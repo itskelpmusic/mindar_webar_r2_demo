@@ -11,10 +11,10 @@ const setStatus = (msg) => {
 setStatus("initializing");
 
 const start = async () => {
-  // MindAR setup – uses your Lament.mind file
+  // MindAR setup – uses your 90s.mind file
   const mindarThree = new MindARThree({
     container: document.querySelector("#container"),
-    imageTargetSrc: "./assets/Lament.mind", // make sure this file exists
+    imageTargetSrc: "./assets/90s.mind", // make sure this file exists
   });
 
   const { renderer, scene, camera } = mindarThree;
