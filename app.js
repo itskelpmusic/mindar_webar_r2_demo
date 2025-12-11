@@ -1,6 +1,6 @@
-import * as THREE from "https://unpkg.com/three@0.152.2/build/three.module.js";
-import { GLTFLoader } from "https://unpkg.com/three@0.152.2/examples/jsm/loaders/GLTFLoader.js";
-import { MindARThree } from "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.module.js";
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js";
+import { MindARThree } from "https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/dist/mindar-image-three.module.js";
 
 const statusEl = document.getElementById("status");
 const setStatus = (msg) => {
@@ -18,7 +18,7 @@ const start = async () => {
 
   const { renderer, scene, camera } = mindarThree;
 
-  const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+  const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
   scene.add(light);
 
   const anchor = mindarThree.addAnchor(0);
@@ -37,7 +37,7 @@ const start = async () => {
       model.scale.set(0.2, 0.2, 0.2);
       model.visible = false;
       anchor.group.add(model);
-      setStatus("Model loaded — point at target image");
+      setStatus("Model loaded — point at target");
     },
     (xhr) => {
       if (xhr.total) {
@@ -45,8 +45,8 @@ const start = async () => {
         setStatus(`Downloading model: ${pct.toFixed(1)}%`);
       }
     },
-    (error) => {
-      console.error(error);
+    (err) => {
+      console.error(err);
       setStatus("Failed to load GLB");
     }
   );
