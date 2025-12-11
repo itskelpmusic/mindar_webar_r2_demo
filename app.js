@@ -14,7 +14,7 @@ const start = async () => {
   // MindAR setup – uses your 90s.mind file
   const mindarThree = new MindARThree({
     container: document.querySelector("#container"),
-    imageTargetSrc: "./assets/90s.mind", // make sure this file exists
+    imageTargetSrc: "./assets/90sPop.mind", // make sure this file exists
   });
 
   const { renderer, scene, camera } = mindarThree;
