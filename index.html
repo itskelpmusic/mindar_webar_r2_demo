@@ -2,22 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MindAR + Three.js + Cloudflare R2 Demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>MindAR + Three.js + Cloudflare R2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
-
-  <!-- Three.js and GLTFLoader -->
-  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.152.2/examples/js/loaders/GLTFLoader.js"></script>
-
-  <!-- MindAR for image tracking + Three.js integration -->
-  <script src="https://unpkg.com/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
 </head>
 <body>
   <div id="ar-container"></div>
-  <div id="ui-overlay">
-    <div id="status">Status: loading...</div>
-  </div>
+  <div id="ui-overlay"><div id="status">Status: loading...</div></div>
+
+  <!-- Load app.js as a module -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
