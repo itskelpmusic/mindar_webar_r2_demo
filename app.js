@@ -1,8 +1,10 @@
-import { MindARThree } from "https://unpkg.com/mind-ar@1.2.5/dist/mindar-image-three.prod.js";
+import * as THREE from "https://unpkg.com/three@0.152.2/build/three.module.js";
+import { GLTFLoader } from "https://unpkg.com/three@0.152.2/examples/jsm/loaders/GLTFLoader.js";
+import { MindARThree } from "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.module.js";
 
 const statusEl = document.getElementById("status");
 const setStatus = (msg) => {
-  if (statusEl) statusEl.textContent = "Status: " + msg;
+  statusEl.textContent = "Status: " + msg;
   console.log(msg);
 };
 
@@ -11,19 +13,18 @@ setStatus("initializing");
 const start = async () => {
   const mindarThree = new MindARThree({
     container: document.querySelector("#ar-container"),
-    imageTargetSrc: "./assets/Lament.mind", // replace with your own .mind file
+    imageTargetSrc: "./assets/Lament.mind"
   });
 
   const { renderer, scene, camera } = mindarThree;
 
   const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
-  light.position.set(0, 1, 0);
   scene.add(light);
 
   const anchor = mindarThree.addAnchor(0);
 
-  const loader = new THREE.GLTFLoader();
-  let model = null;
+  const loader = new GLTFLoader();
+  let model;
 
   const GLB_URL = "https://frosty-union-c144.itskelpmusic.workers.dev/Lamesh.glb";
 
@@ -36,30 +37,28 @@ const start = async () => {
       model.scale.set(0.2, 0.2, 0.2);
       model.visible = false;
       anchor.group.add(model);
-      setStatus("model loaded, point at target");
+      setStatus("Model loaded — point at target image");
     },
     (xhr) => {
       if (xhr.total) {
         const pct = (xhr.loaded / xhr.total) * 100;
-        setStatus("downloading model: " + pct.toFixed(1) + "%");
-      } else {
-        setStatus("downloading model...");
+        setStatus(`Downloading model: ${pct.toFixed(1)}%`);
       }
     },
     (error) => {
-      console.error("Error loading GLB:", error);
-      setStatus("failed to load model");
+      console.error(error);
+      setStatus("Failed to load GLB");
     }
   );
 
   anchor.onTargetFound = () => {
     if (model) model.visible = true;
-    setStatus("target found");
+    setStatus("Target found");
   };
 
   anchor.onTargetLost = () => {
     if (model) model.visible = false;
-    setStatus("target lost (keep camera on image)");
+    setStatus("Target lost");
   };
 
   await mindarThree.start();
@@ -67,11 +66,9 @@ const start = async () => {
   renderer.setAnimationLoop(() => {
     renderer.render(scene, camera);
   });
-
-  setStatus("ready - point camera at target image");
 };
 
 start().catch((err) => {
   console.error(err);
-  setStatus("error: " + err.message);
+  setStatus("Error: " + err.message);
 });
