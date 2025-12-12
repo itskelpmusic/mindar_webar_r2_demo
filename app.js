@@ -18,10 +18,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const { renderer, scene, camera } = mindarThree;
 
-  // Create anchor for target index 0
+  // -----------------------------------
+  // ANCHOR
+  // -----------------------------------
   const anchor = mindarThree.addAnchor(0);
 
-  // Setup GLTF loader
+  // -----------------------------------
+  // TEMP TEST CUBE (to confirm rendering)
+  // -----------------------------------
+  const testGeom = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+  const testMat = new THREE.MeshNormalMaterial();
+  const testCube = new THREE.Mesh(testGeom, testMat);
+  testCube.visible = false;
+  anchor.group.add(testCube);
+
+  // -----------------------------------
+  // LOAD GLB MODEL
+  // -----------------------------------
   const loader = new GLTFLoader();
   let model = null;
 
@@ -35,11 +48,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     (gltf) => {
       model = gltf.scene;
 
-      // Recommended starting transforms
-      model.visible = false; // Make invisible until target found
+      // Compute and log bounding box
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+
+      console.log("BOUNDING BOX:", box);
+      console.log("MODEL SIZE:", size);
+      console.log("MODEL CENTER:", center);
+
+      // Normalize the model so its geometric center sits at (0,0,0)
+      box.getCenter(model.position).multiplyScalar(-1);
+
+      // Try large scale first so we can see it
       model.scale.set(1, 1, 1);
-      model.position.set(0, 0, 0);
-      model.rotation.set(0, 0, 0);
+      model.visible = false;
 
       anchor.group.add(model);
 
@@ -59,26 +82,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   );
 
-  // When MindAR detects the printed foamex target
+  // -----------------------------------
+  // TRACKING EVENTS
+  // -----------------------------------
   mindarThree.controller.on("targetFound", () => {
     console.log("FOUND TARGET!");
     setStatus("target found");
 
+    if (testCube) testCube.visible = true;
     if (model) model.visible = true;
   });
 
-  // When target is not visible
   mindarThree.controller.on("targetLost", () => {
     console.log("LOST TARGET!");
     setStatus("target lost");
 
+    if (testCube) testCube.visible = false;
     if (model) model.visible = false;
   });
 
-  // Start AR session
+  // -----------------------------------
+  // START AR SESSION
+  // -----------------------------------
   await mindarThree.start();
 
-  // Render loop
   renderer.setAnimationLoop(() => {
     renderer.render(scene, camera);
   });
