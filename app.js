@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // Recommended starting transforms
       model.visible = false; // Make invisible until target found
-      model.scale.set(0.2, 0.2, 0.2);
+      model.scale.set(1, 1, 1);
       model.position.set(0, 0, 0);
       model.rotation.set(0, 0, 0);
 
