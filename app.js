@@ -8,7 +8,8 @@ function setStatus(msg) {
   statusEl.textContent = msg;
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
+// RUN IMMEDIATELY — no DOMContentLoaded timing issues
+(async () => {
   setStatus("initializing AR…");
 
   const mindarThree = new MindARThree({
@@ -48,7 +49,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     (gltf) => {
       model = gltf.scene;
 
-      // bounding box logs
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("MODEL SIZE:", size);
       console.log("MODEL CENTER:", center);
 
-      // center model
+      // Center model
       box.getCenter(model.position).multiplyScalar(-1);
 
       model.scale.set(1, 1, 1);
@@ -84,7 +84,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // -----------------------------------
   // TRACKING EVENTS
   // -----------------------------------
-  mindarThree.controller.on("targetFound", () => {
+  mindarThree.on("targetFound", () => {
     console.log("FOUND TARGET!");
     setStatus("target found");
 
@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (model) model.visible = true;
   });
 
-  mindarThree.controller.on("targetLost", () => {
+  mindarThree.on("targetLost", () => {
     console.log("LOST TARGET!");
     setStatus("target lost");
 
@@ -101,11 +101,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // -----------------------------------
-  // START AR
+  // START AR ENGINE
   // -----------------------------------
   await mindarThree.start();
+
+  setStatus("camera started — point at target");
 
   renderer.setAnimationLoop(() => {
     renderer.render(scene, camera);
   });
-});
+})();
