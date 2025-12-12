@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   setStatus("initializing AR…");
 
   const mindarThree = new MindARThree({
-    container: document.body,
+    container: document.querySelector("#container"),
     imageTargetSrc: "./assets/90sPop.mind",
   });
 
