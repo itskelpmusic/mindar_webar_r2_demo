@@ -1,6 +1,6 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js";
-import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js";
-import { MindARThree } from "https://cdn.jsdelivr.net/npm/mind-ar/dist/mindar-image-three.prod.js";
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MindARThree } from "mindar-image-three";
 
 const statusEl = document.getElementById("status");
 function setStatus(msg) {
@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const anchor = mindarThree.addAnchor(0);
 
   // -----------------------------------
-  // TEMP TEST CUBE (to confirm rendering)
+  // TEMP TEST CUBE
   // -----------------------------------
   const testGeom = new THREE.BoxGeometry(0.5, 0.5, 0.5);
   const testMat = new THREE.MeshNormalMaterial();
@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   anchor.group.add(testCube);
 
   // -----------------------------------
-  // LOAD GLB MODEL
+  // LOAD GLB
   // -----------------------------------
   const loader = new GLTFLoader();
   let model = null;
@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     (gltf) => {
       model = gltf.scene;
 
-      // Compute and log bounding box
+      // Bounding box debug
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
@@ -57,10 +57,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("MODEL SIZE:", size);
       console.log("MODEL CENTER:", center);
 
-      // Normalize the model so its geometric center sits at (0,0,0)
+      // Center model
       box.getCenter(model.position).multiplyScalar(-1);
 
-      // Try large scale first so we can see it
+      // Start LARGE so we can see it
       model.scale.set(1, 1, 1);
       model.visible = false;
 
@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // -----------------------------------
-  // START AR SESSION
+  // START AR
   // -----------------------------------
   await mindarThree.start();
 
