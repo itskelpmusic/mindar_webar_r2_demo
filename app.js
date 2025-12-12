@@ -1,77 +1,88 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>MindAR + Three.js + Cloudflare R2</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MindARThree } from "mindar-image-three";
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      width: 100%;
-      height: 100%;
-      background: #000; /* helps show if camera isn't running */
+const statusEl = document.getElementById("status");
+const setStatus = (msg) => {
+  if (statusEl) statusEl.textContent = "Status: " + msg;
+  console.log(msg);
+};
+
+setStatus("initializing");
+
+const start = async () => {
+  // MindAR setup – uses your Lament.mind file
+  const mindarThree = new MindARThree({
+    container: document.querySelector("#container"),
+    imageTargetSrc: "./assets/Lament.mind", // make sure this file exists
+  });
+
+  const { renderer, scene, camera } = mindarThree;
+
+  // Simple light so the model isn't black
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+  hemi.position.set(0, 1, 0);
+  scene.add(hemi);
+
+  // Anchor = first image in the .mind file (index 0)
+  const anchor = mindarThree.addAnchor(0);
+
+  const loader = new GLTFLoader();
+  let model = null;
+
+  // Your Cloudflare Worker URL
+  const GLB_URL =
+    "https://frosty-union-c144.itskelpmusic.workers.dev/Lamesh.glb";
+
+  setStatus("loading GLB…");
+
+  loader.load(
+    GLB_URL,
+    (gltf) => {
+      model = gltf.scene;
+      // Adjust as needed for your target size
+      model.scale.set(0.2, 0.2, 0.2);
+      model.visible = false;
+      anchor.group.add(model);
+      setStatus("model loaded – point at target");
+    },
+    (xhr) => {
+      if (xhr.total) {
+        const pct = (xhr.loaded / xhr.total) * 100;
+        setStatus("downloading model: " + pct.toFixed(1) + "%");
+      } else {
+        setStatus("downloading model…");
+      }
+    },
+    (error) => {
+      console.error("Error loading GLB:", error);
+      setStatus("failed to load model");
     }
+  );
 
-    /* Where MindAR draws the video + 3D scene */
-    #container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 1;
-      background: transparent;
-    }
+  // Show / hide model when image is found/lost
+  anchor.onTargetFound = () => {
+    if (model) model.visible = true;
+    setStatus("target found");
+  };
 
-    /* Overlay UI/status text */
-    #ui-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 2;
-      pointer-events: none;
-      background: transparent;
-    }
+  anchor.onTargetLost = () => {
+    if (model) model.visible = false;
+    setStatus("target lost (keep camera on image)");
+  };
 
-    #status {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      padding: 10px 15px;
-      color: white;
-      font-size: 18px;
-      background: rgba(0,0,0,0.4);
-      border-radius: 4px;
-    }
-  </style>
+  // Start AR
+  await mindarThree.start();
 
-  <!-- Import map: tells browser where modules come from -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-      "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
-    }
-  }
-  </script>
-</head>
+  renderer.setAnimationLoop(() => {
+    renderer.render(scene, camera);
+  });
 
-<body>
-  <!-- AR video + 3D scene renders here -->
-  <div id="container"></div>
+  setStatus("ready – point at target image");
+};
 
-  <!-- UI overlay -->
-  <div id="ui-overlay">
-    <div id="status">Status: loading…</div>
-  </div>
-
-  <!-- Main script -->
-  <script type="module" src="./app.js"></script>
-</body>
-</html>
+// Start after DOM is ready
+start().catch((err) => {
+  console.error(err);
+  setStatus("error: " + err.message);
+});
