@@ -1,36 +1,30 @@
-import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { MindARThree } from "mindar-image-three";
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js";
+import { MindARThree } from "https://cdn.jsdelivr.net/npm/mind-ar/dist/mindar-image-three.prod.js";
 
 const statusEl = document.getElementById("status");
-const setStatus = (msg) => {
-  if (statusEl) statusEl.textContent = "Status: " + msg;
+function setStatus(msg) {
   console.log(msg);
-};
+  statusEl.textContent = msg;
+}
 
-setStatus("initializing");
+document.addEventListener("DOMContentLoaded", async () => {
+  setStatus("initializing AR…");
 
-const start = async () => {
-  // MindAR setup – uses your 90sPop.mind file
   const mindarThree = new MindARThree({
-    container: document.querySelector("#container"),
-    imageTargetSrc: "./assets/90sPop.mind", // make sure this file exists
+    container: document.body,
+    imageTargetSrc: "./assets/90sPop.mind",
   });
 
   const { renderer, scene, camera } = mindarThree;
 
-  // Simple light so the model isn't black
-  const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
-  hemi.position.set(0, 1, 0);
-  scene.add(hemi);
-
-  // Anchor = first image in the .mind file (index 0)
+  // Create anchor for target index 0
   const anchor = mindarThree.addAnchor(0);
 
+  // Setup GLTF loader
   const loader = new GLTFLoader();
   let model = null;
 
-  // Your Cloudflare Worker URL
   const GLB_URL =
     "https://frosty-union-c144.itskelpmusic.workers.dev/Lamesh.glb";
 
@@ -40,16 +34,21 @@ const start = async () => {
     GLB_URL,
     (gltf) => {
       model = gltf.scene;
-      // Adjust as needed for your target size
+
+      // Recommended starting transforms
+      model.visible = false; // Make invisible until target found
       model.scale.set(0.2, 0.2, 0.2);
-      model.visible = false;
+      model.position.set(0, 0, 0);
+      model.rotation.set(0, 0, 0);
+
       anchor.group.add(model);
+
       setStatus("model loaded – point at target");
     },
     (xhr) => {
       if (xhr.total) {
         const pct = (xhr.loaded / xhr.total) * 100;
-        setStatus("downloading model: " + pct.toFixed(1) + "%");
+        setStatus(`downloading model: ${pct.toFixed(1)}%`);
       } else {
         setStatus("downloading model…");
       }
@@ -60,29 +59,27 @@ const start = async () => {
     }
   );
 
-  // Show / hide model when image is found/lost
-  anchor.onTargetFound = () => {
-    if (model) model.visible = true;
+  // When MindAR detects the printed foamex target
+  mindarThree.controller.on("targetFound", () => {
+    console.log("FOUND TARGET!");
     setStatus("target found");
-  };
 
-  anchor.onTargetLost = () => {
+    if (model) model.visible = true;
+  });
+
+  // When target is not visible
+  mindarThree.controller.on("targetLost", () => {
+    console.log("LOST TARGET!");
+    setStatus("target lost");
+
     if (model) model.visible = false;
-    setStatus("target lost (keep camera on image)");
-  };
+  });
 
-  // Start AR
+  // Start AR session
   await mindarThree.start();
 
+  // Render loop
   renderer.setAnimationLoop(() => {
     renderer.render(scene, camera);
   });
-
-  setStatus("ready – point at target image");
-};
-
-// Start after DOM is ready
-start().catch((err) => {
-  console.error(err);
-  setStatus("error: " + err.message);
 });
