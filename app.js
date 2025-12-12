@@ -1,113 +1,77 @@
-import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { MindARThree } from "mindar-image-three";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MindAR + Three.js + Cloudflare R2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-const statusEl = document.getElementById("status");
-function setStatus(msg) {
-  console.log(msg);
-  statusEl.textContent = msg;
-}
-
-// RUN IMMEDIATELY — no DOMContentLoaded timing issues
-(async () => {
-  setStatus("initializing AR…");
-
-  const mindarThree = new MindARThree({
-    container: document.querySelector("#container"),
-    imageTargetSrc: "./assets/90sPop.mind",
-  });
-
-  const { renderer, scene, camera } = mindarThree;
-
-  // -----------------------------------
-  // ANCHOR
-  // -----------------------------------
-  const anchor = mindarThree.addAnchor(0);
-
-  // -----------------------------------
-  // DEBUG CUBE
-  // -----------------------------------
-  const testGeom = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-  const testMat = new THREE.MeshNormalMaterial();
-  const testCube = new THREE.Mesh(testGeom, testMat);
-  testCube.visible = false;
-  anchor.group.add(testCube);
-
-  // -----------------------------------
-  // LOAD GLB MODEL
-  // -----------------------------------
-  const loader = new GLTFLoader();
-  let model = null;
-
-  const GLB_URL =
-    "https://frosty-union-c144.itskelpmusic.workers.dev/Lamesh.glb";
-
-  setStatus("loading GLB…");
-
-  loader.load(
-    GLB_URL,
-    (gltf) => {
-      model = gltf.scene;
-
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
-
-      console.log("BOUNDING BOX:", box);
-      console.log("MODEL SIZE:", size);
-      console.log("MODEL CENTER:", center);
-
-      // Center model
-      box.getCenter(model.position).multiplyScalar(-1);
-
-      model.scale.set(1, 1, 1);
-      model.visible = false;
-
-      anchor.group.add(model);
-
-      setStatus("model loaded – point at target");
-    },
-    (xhr) => {
-      if (xhr.total) {
-        const pct = (xhr.loaded / xhr.total) * 100;
-        setStatus(`downloading model: ${pct.toFixed(1)}%`);
-      } else {
-        setStatus("downloading model…");
-      }
-    },
-    (err) => {
-      console.error("Error loading GLB:", err);
-      setStatus("failed to load model");
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      background: #000; /* helps show if camera isn't running */
     }
-  );
 
-  // -----------------------------------
-  // TRACKING EVENTS
-  // -----------------------------------
-  mindarThree.on("targetFound", () => {
-    console.log("FOUND TARGET!");
-    setStatus("target found");
+    /* Where MindAR draws the video + 3D scene */
+    #container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      background: transparent;
+    }
 
-    testCube.visible = true;
-    if (model) model.visible = true;
-  });
+    /* Overlay UI/status text */
+    #ui-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 2;
+      pointer-events: none;
+      background: transparent;
+    }
 
-  mindarThree.on("targetLost", () => {
-    console.log("LOST TARGET!");
-    setStatus("target lost");
+    #status {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 10px 15px;
+      color: white;
+      font-size: 18px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 4px;
+    }
+  </style>
 
-    testCube.visible = false;
-    if (model) model.visible = false;
-  });
+  <!-- Import map: tells browser where modules come from -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+    }
+  }
+  </script>
+</head>
 
-  // -----------------------------------
-  // START AR ENGINE
-  // -----------------------------------
-  await mindarThree.start();
+<body>
+  <!-- AR video + 3D scene renders here -->
+  <div id="container"></div>
 
-  setStatus("camera started — point at target");
+  <!-- UI overlay -->
+  <div id="ui-overlay">
+    <div id="status">Status: loading…</div>
+  </div>
 
-  renderer.setAnimationLoop(() => {
-    renderer.render(scene, camera);
-  });
-})();
+  <!-- Main script -->
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
