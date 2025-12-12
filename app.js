@@ -1,6 +1,6 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js";
-import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/loaders/GLTFLoader.js";
-import { MindARThree } from "https://cdn.jsdelivr.net/npm/mind-ar/dist/mindar-image-three.prod.js";
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MindARThree } from "mindar-image-three";
 
 const statusEl = document.getElementById("status");
 function setStatus(msg) {
@@ -18,10 +18,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const { renderer, scene, camera } = mindarThree;
 
-  // Create anchor for target index 0
+  // -----------------------------------
+  // ANCHOR
+  // -----------------------------------
   const anchor = mindarThree.addAnchor(0);
 
-  // Setup GLTF loader
+  // -----------------------------------
+  // DEBUG CUBE
+  // -----------------------------------
+  const testGeom = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+  const testMat = new THREE.MeshNormalMaterial();
+  const testCube = new THREE.Mesh(testGeom, testMat);
+  testCube.visible = false;
+  anchor.group.add(testCube);
+
+  // -----------------------------------
+  // LOAD GLB MODEL
+  // -----------------------------------
   const loader = new GLTFLoader();
   let model = null;
 
@@ -35,11 +48,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     (gltf) => {
       model = gltf.scene;
 
-      // Recommended starting transforms
-      model.visible = false; // Make invisible until target found
-      model.scale.set(0.2, 0.2, 0.2);
-      model.position.set(0, 0, 0);
-      model.rotation.set(0, 0, 0);
+      // bounding box logs
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+
+      console.log("BOUNDING BOX:", box);
+      console.log("MODEL SIZE:", size);
+      console.log("MODEL CENTER:", center);
+
+      // center model
+      box.getCenter(model.position).multiplyScalar(-1);
+
+      model.scale.set(1, 1, 1);
+      model.visible = false;
 
       anchor.group.add(model);
 
@@ -53,32 +75,36 @@ document.addEventListener("DOMContentLoaded", async () => {
         setStatus("downloading model…");
       }
     },
-    (error) => {
-      console.error("Error loading GLB:", error);
+    (err) => {
+      console.error("Error loading GLB:", err);
       setStatus("failed to load model");
     }
   );
 
-  // When MindAR detects the printed foamex target
+  // -----------------------------------
+  // TRACKING EVENTS
+  // -----------------------------------
   mindarThree.controller.on("targetFound", () => {
     console.log("FOUND TARGET!");
     setStatus("target found");
 
+    testCube.visible = true;
     if (model) model.visible = true;
   });
 
-  // When target is not visible
   mindarThree.controller.on("targetLost", () => {
     console.log("LOST TARGET!");
     setStatus("target lost");
 
+    testCube.visible = false;
     if (model) model.visible = false;
   });
 
-  // Start AR session
+  // -----------------------------------
+  // START AR
+  // -----------------------------------
   await mindarThree.start();
 
-  // Render loop
   renderer.setAnimationLoop(() => {
     renderer.render(scene, camera);
   });
