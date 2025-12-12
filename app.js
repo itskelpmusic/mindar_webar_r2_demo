@@ -1,112 +1,25 @@
-import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { MindARThree } from "mindar-image-three";
+loader.load(
+  GLB_URL,
+  (gltf) => {
+    model = gltf.scene;
 
-const statusEl = document.getElementById("status");
-function setStatus(msg) {
-  console.log(msg);
-  statusEl.textContent = msg;
-}
+    // Log bounding box
+    const box = new THREE.Box3().setFromObject(model);
+    console.log("BOUNDING BOX:", box);
 
-document.addEventListener("DOMContentLoaded", async () => {
-  setStatus("initializing AR…");
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    console.log("MODEL SIZE:", size);
+    console.log("MODEL CENTER:", center);
 
-  const mindarThree = new MindARThree({
-    container: document.body,
-    imageTargetSrc: "./assets/90sPop.mind",
-  });
+    // Normalize model so it's centered
+    box.getCenter(model.position).multiplyScalar(-1);
 
-  const { renderer, scene, camera } = mindarThree;
+    // Try a much larger scale to make sure we see it
+    model.scale.set(1, 1, 1); // was 0.2
+    model.visible = false;
 
-  // -----------------------------------
-  // ANCHOR
-  // -----------------------------------
-  const anchor = mindarThree.addAnchor(0);
+    anchor.group.add(model);
 
-  // -----------------------------------
-  // TEMP TEST CUBE
-  // -----------------------------------
-  const testGeom = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-  const testMat = new THREE.MeshNormalMaterial();
-  const testCube = new THREE.Mesh(testGeom, testMat);
-  testCube.visible = false;
-  anchor.group.add(testCube);
-
-  // -----------------------------------
-  // LOAD GLB
-  // -----------------------------------
-  const loader = new GLTFLoader();
-  let model = null;
-
-  const GLB_URL =
-    "https://frosty-union-c144.itskelpmusic.workers.dev/Lamesh.glb";
-
-  setStatus("loading GLB…");
-
-  loader.load(
-    GLB_URL,
-    (gltf) => {
-      model = gltf.scene;
-
-      // Bounding box debug
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
-
-      console.log("BOUNDING BOX:", box);
-      console.log("MODEL SIZE:", size);
-      console.log("MODEL CENTER:", center);
-
-      // Center model
-      box.getCenter(model.position).multiplyScalar(-1);
-
-      // Start LARGE so we can see it
-      model.scale.set(1, 1, 1);
-      model.visible = false;
-
-      anchor.group.add(model);
-
-      setStatus("model loaded – point at target");
-    },
-    (xhr) => {
-      if (xhr.total) {
-        const pct = (xhr.loaded / xhr.total) * 100;
-        setStatus(`downloading model: ${pct.toFixed(1)}%`);
-      } else {
-        setStatus("downloading model…");
-      }
-    },
-    (error) => {
-      console.error("Error loading GLB:", error);
-      setStatus("failed to load model");
-    }
-  );
-
-  // -----------------------------------
-  // TRACKING EVENTS
-  // -----------------------------------
-  mindarThree.controller.on("targetFound", () => {
-    console.log("FOUND TARGET!");
-    setStatus("target found");
-
-    if (testCube) testCube.visible = true;
-    if (model) model.visible = true;
-  });
-
-  mindarThree.controller.on("targetLost", () => {
-    console.log("LOST TARGET!");
-    setStatus("target lost");
-
-    if (testCube) testCube.visible = false;
-    if (model) model.visible = false;
-  });
-
-  // -----------------------------------
-  // START AR
-  // -----------------------------------
-  await mindarThree.start();
-
-  renderer.setAnimationLoop(() => {
-    renderer.render(scene, camera);
-  });
-});
+    setStatus("model loaded – point at target");
+  },
